@@ -53,6 +53,39 @@ public class Ontology {
 			return result;
 		}
 	}
+	/**
+	 * 
+	 * @param id0
+	 * @param id1
+	 * @return whether id0 is ancestor of id1 or not
+	 */
+	public boolean isAncestors(int id0, int id1){
+		Concept c0 = returnById(id0);
+		Concept c1 = returnById(id1);
+		
+		for(Concept c = c1; c != null; c = c.upperClass){
+			if(c == c0){
+				return true;
+			}
+				
+		}
+		return false;
+	}
+	@Deprecated
+	public String LCS(String uri0, String uri1){
+		int id0 = dbAgent.getId(uri0), id1 = dbAgent.getId(uri1);
+		Concept c0 = returnById(id0), c1 = returnById(id1);
+		String result = null;
+		for(Concept c = c0; c != null; c = c.upperClass){
+			if(isAncestors(c.id, id1)){
+				result = dbAgent.getUri(c.id);
+				break;
+			}
+				
+		}
+		
+		return result;
+	}
 	
 	public static void main(String[] args) {
 		Ontology otlg = new Ontology();
@@ -78,8 +111,6 @@ public class Ontology {
 	            }
 	        }
 	    }
-		System.out.println(otlg.size);
-		System.out.println(otlg.countByDFS(otlg.root));
 		
 	}
 }
