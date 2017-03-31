@@ -1,6 +1,7 @@
 package name.zanbry.cdc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,6 +9,11 @@ import java.io.*;
 
 import name.zanbry.db.DBAgent;
 
+/**
+ * 
+ * @author guyu
+ *
+ */
 public class Ontology {
 	public Concept root;
 	public Concept[] allConcepts = new Concept[458];
@@ -19,7 +25,11 @@ public class Ontology {
 		root = new Concept(dbAgent.getId("<http://www.w3.org/2002/07/owl#Thing>"));
 		allConcepts[0] = root;
 		size = 1;
-		
+		for(int i = 0; i < 458; i++)
+			for(int j = 0; j < 458; j ++){
+				distance[i][j] = 10000;
+				LCS[i][j] = -1;
+			}
 	}
 	public void constructByTuple(int parentId, int childId){
 		Concept parent = returnById(parentId);
@@ -54,7 +64,7 @@ public class Ontology {
 	/**
 	 * 
 	 * @param c
-	 * @return the index of concept c in array allConcepts
+	 * @return the index of concept c in array allConcepts,, if the target doesn't exist then return -1
 	 */
 	public int getIndex(Concept c){
 		for(int i = 0; i < size; i ++){
@@ -123,19 +133,61 @@ public class Ontology {
 			root.descendants.addAll(c.descendants);
 		}
 	}
-	public void calculateByDFS(Concept root){
-		if(root.lowerClasses.size() == 0){
-			int index = getIndex(root);
-			if(index != -1){
-				distance[index][index] = 0;
-				LCS[index][index] = root.id;
+	/**
+	 * calculate the distance of every pairs of nodes by dfs
+	 * @param root
+	 */
+	public void calculateDisByDFS(Concept root){
+		int index0 = getIndex(root);
+		distance[index0][index0] = 0;
+		
+		for(Concept c: root.lowerClasses){
+			calculateDisByDFS(c);
+			int indexc = getIndex(c);
+			distance[index0][indexc] = 1;
+			distance[indexc][index0] = 1;
+			List<Concept> des = c.descendants;
+			for(Concept d: des){
+				int indexd = getIndex(d);
+				distance[index0][indexd] = distance[indexc][indexd] + 1;
+				distance[indexd][index0] = distance[index0][indexd];
 			}
-			else System.out.println("fatal error: index = -1");
 		}
-		else{
-			for(Concept c: root.lowerClasses)
-				calculateByDFS(c);
+		
+		for(int i = 0; i < root.descendants.size(); i ++)
+			for(int j = i + 1; j < root.descendants.size(); j ++){
+				int i0 = getIndex(root.descendants.get(i));
+				int j0 = getIndex(root.descendants.get(j));
+				if(distance[i0][j0] == 10000){
+					distance[i0][j0] = distance[i0][index0] + distance[j0][index0];
+					distance[j0][i0] = distance[i0][j0];
+						
+				}
+			}
+		
+	}
+	public void calculateLCSByDFS(Concept root){
+		int index0 = getIndex(root);
+		LCS[index0][index0] = root.id;
+		
+		for(Concept c: root.lowerClasses){
+			calculateLCSByDFS(c);
+			int indexc = getIndex(c);
+			LCS[index0][indexc] = LCS[indexc][index0] = root.id;
+			for(Concept d: c.descendants){
+				int indexd = getIndex(d);
+				LCS[index0][indexd] = LCS[indexd][index0] = root.id;
+			}
 		}
+		for(int i = 0; i < root.descendants.size(); i ++)
+			for(int j = i + 1; j < root.descendants.size(); j ++){
+				int i0 = getIndex(root.descendants.get(i));
+				int j0 = getIndex(root.descendants.get(j));
+				if(LCS[i0][j0] == -1){
+					LCS[j0][i0] = LCS[i0][j0] = root.id;
+						
+				}
+			}
 	}
 	public int countByDFS(Concept root){
 		int result = 1;
@@ -207,12 +259,12 @@ public class Ontology {
 	        }
 	    }
 		otlg.Descendant(otlg.root);
-		
-		int id = otlg.dbAgent.getId("<http://dbpedia.org/ontology/Work>");
-		for(Concept c: otlg.returnById(id).descendants)
-			System.out.println(c.id);
-		Set<Concept> set = new HashSet<Concept>();
-		set.addAll(otlg.returnById(id).descendants);
-		System.out.println(set.size());
+		otlg.calculateLCSByDFS(otlg.root);
+		for(int i = 0; i < 8; i ++)
+			for(int j = i + 1 ; j < 8; j ++){
+				System.out.print(otlg.dbAgent.getUri(otlg.allConcepts[i].id) + " ");
+				System.out.print(otlg.dbAgent.getUri(otlg.allConcepts[j].id) + " ");
+				System.out.println("  " + otlg.dbAgent.getUri(otlg.LCS[j][i]) + "  " + otlg.dbAgent.getUri(otlg.LCS[i][j]));
+			}
 	}
 }
