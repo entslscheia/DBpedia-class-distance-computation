@@ -19,6 +19,7 @@ public class Ontology {
 	public Concept[] allConcepts = new Concept[458];
 	public int[][] distance = new int[458][458];
 	public int[][] LCS = new int[458][458];
+	public double[] IC = new double[458];
 	int size = 0;
 	public DBAgent dbAgent = DBAgent.getInstance();
 	public Ontology(){
@@ -30,6 +31,12 @@ public class Ontology {
 				distance[i][j] = 10000;
 				LCS[i][j] = -1;
 			}
+	}
+	public void Calculate(){
+		Descendant(root);
+		calculateDisByDFS(root);
+		calculateLCSByDFS(root);
+		calculateIC();
 	}
 	public void constructByTuple(int parentId, int childId){
 		Concept parent = returnById(parentId);
@@ -48,6 +55,24 @@ public class Ontology {
 		
 		parent.lowerClasses.add(child);
 		child.upperClass = parent;
+	}
+	public void calculateIC(){
+		
+	}
+	/**
+	 * 
+	 * @param classid0
+	 * @param classid1
+	 * @return return the similarity between classid0 and classid1
+	 */
+	public double Similarity(int classid0, int classid1){
+		int index0 = getIndex(classid0), index1 = getIndex(classid1);
+		int dist = distance[index0][index1];
+		int lcsClassID = LCS[index0][index1];
+		int lcsindex = getIndex(lcsClassID);
+		double sim = 1/(1 + dist*Math.pow(0.8, IC[lcsindex]));
+		
+		return sim;
 	}
 	/**
 	 * 
@@ -69,6 +94,13 @@ public class Ontology {
 	public int getIndex(Concept c){
 		for(int i = 0; i < size; i ++){
 			if(allConcepts[i] == c)
+				return i;
+		}
+		return -1;
+	}
+	public int getIndex(int classid){
+		for(int i = 0; i < size; i ++){
+			if(allConcepts[i].id == classid)
 				return i;
 		}
 		return -1;
@@ -258,8 +290,7 @@ public class Ontology {
 	            }
 	        }
 	    }
-		otlg.Descendant(otlg.root);
-		otlg.calculateLCSByDFS(otlg.root);
+		otlg.Calculate();
 		for(int i = 0; i < 8; i ++)
 			for(int j = i + 1 ; j < 8; j ++){
 				System.out.print(otlg.dbAgent.getUri(otlg.allConcepts[i].id) + " ");
