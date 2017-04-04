@@ -21,6 +21,7 @@ public class Ontology {
 	public int[][] distance = new int[458][458];
 	public int[][] LCS = new int[458][458];
 	public double[] IC = new double[458];
+	public double[][] Similarity = new double[458][458];
 	int size = 0;
 	public DBAgent dbAgent = DBAgent.getInstance();
 	public Ontology(){
@@ -38,6 +39,7 @@ public class Ontology {
 		calculateDisByDFS(root);
 		calculateLCSByDFS(root);
 		calculateIC();
+		calculateSimilarity();
 	}
 	public void constructByTuple(int parentId, int childId){
 		Concept parent = returnById(parentId);
@@ -94,9 +96,32 @@ public class Ontology {
 		int dist = distance[index0][index1];
 		int lcsClassID = LCS[index0][index1];
 		int lcsindex = getIndex(lcsClassID);
-		double sim = 1/(1 + dist*Math.pow(0.8, IC[lcsindex]));
+		double sim = 1/(1 + dist*Math.pow(0.5, IC[lcsindex]));
 		
 		return sim;
+	}
+	/**
+	 * 
+	 * @param classid0
+	 * @param classid1
+	 * @return return the similarity between classid0 and classid1
+	 */
+	public double getSimilarity(int classid0, int classid1){
+		int index0 = getIndex(classid0), index1 = getIndex(classid1);
+		return Similarity[index0][index1];
+	}
+	/**
+	 * calculate similarity of every pairs
+	 */
+	public void calculateSimilarity(){
+		for(int i = 0; i < 458; i ++)
+			for(int j = 0; j < 458; j ++){
+				int dist = distance[i][j];
+				int lcsClassID = LCS[i][j];
+				int lcsindex = getIndex(lcsClassID);
+				
+				Similarity[i][j] = 1/(1 + dist*Math.pow(0.5, IC[lcsindex]));
+			}
 	}
 	/**
 	 * 
@@ -316,9 +341,10 @@ public class Ontology {
 	    }
 		
 		otlg.Calculate();
-		int classid0 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/Writer>");
-		int classid1 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/Poet>");
+		int classid0 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/BaseballPlayer>");
+		int classid1 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/Athlete>");
 		System.out.println(otlg.Similarity(classid0, classid1));
+		System.out.println(otlg.getSimilarity(classid0, classid1));
 		/*for(int i = 0; i < 8; i ++)
 			for(int j = i + 1 ; j < 8; j ++){
 				System.out.print(otlg.dbAgent.getUri(otlg.allConcepts[i].id) + " ");
