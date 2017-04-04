@@ -41,6 +41,30 @@ public class Ontology {
 		calculateIC();
 		calculateSimilarity();
 	}
+	public void Construct(){
+		File file = new File("data.txt");
+		BufferedReader reader = null; 
+		try {
+	        reader = new BufferedReader(new FileReader(file));
+	        String tempString = null;
+	        while ((tempString = reader.readLine()) != null) {
+	        	String tuple[] = tempString.split("____");
+	        	int childId = this.dbAgent.getId(tuple[0]);
+	        	int parentId = this.dbAgent.getId(tuple[2]);
+	        	this.constructByTuple(parentId, childId);
+	        }
+	        reader.close();
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    } finally {
+	        if (reader != null) {
+	            try {
+	                reader.close();
+	            } catch (IOException e1) {
+	            }
+	        }
+	    }
+	}
 	public void constructByTuple(int parentId, int childId){
 		Concept parent = returnById(parentId);
 		if(parent == null){
@@ -109,6 +133,9 @@ public class Ontology {
 	public double getSimilarity(int classid0, int classid1){
 		int index0 = getIndex(classid0), index1 = getIndex(classid1);
 		return Similarity[index0][index1];
+	}
+	public double getDistance(int classid0, int classid1){
+		return 1 - getSimilarity(classid0, classid1);
 	}
 	/**
 	 * calculate similarity of every pairs
@@ -317,34 +344,14 @@ public class Ontology {
 	
 	public static void main(String[] args) {
 		Ontology otlg = new Ontology();
-		File file = new File("data.txt");
-		BufferedReader reader = null; 
-		try {
-	        reader = new BufferedReader(new FileReader(file));
-	        String tempString = null;
-	        while ((tempString = reader.readLine()) != null) {
-	        	String tuple[] = tempString.split("____");
-	        	int childId = otlg.dbAgent.getId(tuple[0]);
-	        	int parentId = otlg.dbAgent.getId(tuple[2]);
-	        	otlg.constructByTuple(parentId, childId);
-	        }
-	        reader.close();
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	    } finally {
-	        if (reader != null) {
-	            try {
-	                reader.close();
-	            } catch (IOException e1) {
-	            }
-	        }
-	    }
 		
+		otlg.Construct();
 		otlg.Calculate();
 		int classid0 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/BaseballPlayer>");
 		int classid1 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/Athlete>");
 		System.out.println(otlg.Similarity(classid0, classid1));
 		System.out.println(otlg.getSimilarity(classid0, classid1));
+		System.out.println(otlg.getDistance(classid0, classid1));
 		/*for(int i = 0; i < 8; i ++)
 			for(int j = i + 1 ; j < 8; j ++){
 				System.out.print(otlg.dbAgent.getUri(otlg.allConcepts[i].id) + " ");
