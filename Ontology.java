@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.io.*;
+import java.sql.*;
 
 import name.zanbry.db.DBAgent;
 
@@ -57,7 +58,30 @@ public class Ontology {
 		child.upperClass = parent;
 	}
 	public void calculateIC(){
+		DBConnector dbc = new DBConnector();
+		Connection conn = dbc.conn;
 		
+		 try {
+				Statement statement = conn.createStatement();
+				//String sql = "select count(*) as total from instance_type_ids where class=" + dbAgent.getId("<http://www.w3.org/2002/07/owl#Thing>");
+				String sql = "select count(distinct instance) as total from instance_type_ids";
+				ResultSet rs = statement.executeQuery(sql);
+				rs.next();
+				int total = rs.getInt("total");
+				for(int i = 0;i < allConcepts.length; i ++){
+					int classid = allConcepts[i].id;
+					sql = "select count(*) as total from instance_type_ids where class=" + classid;
+					rs = statement.executeQuery(sql);
+					rs.next();
+					int count = rs.getInt("total");
+					IC[i] = (double)count/total;
+				}
+				conn.close();
+			}catch (SQLException e){
+				e.printStackTrace();
+				
+			}
+
 	}
 	/**
 	 * 
@@ -290,12 +314,16 @@ public class Ontology {
 	            }
 	        }
 	    }
+		
 		otlg.Calculate();
-		for(int i = 0; i < 8; i ++)
+		int classid0 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/Writer>");
+		int classid1 = otlg.dbAgent.getId("<http://dbpedia.org/ontology/Poet>");
+		System.out.println(otlg.Similarity(classid0, classid1));
+		/*for(int i = 0; i < 8; i ++)
 			for(int j = i + 1 ; j < 8; j ++){
 				System.out.print(otlg.dbAgent.getUri(otlg.allConcepts[i].id) + " ");
 				System.out.print(otlg.dbAgent.getUri(otlg.allConcepts[j].id) + " ");
 				System.out.println("  " + otlg.dbAgent.getUri(otlg.LCS[j][i]) + "  " + otlg.dbAgent.getUri(otlg.LCS[i][j]));
-			}
+			}*/
 	}
 }
